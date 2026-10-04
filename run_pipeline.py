@@ -658,6 +658,11 @@ def _build_cfg(args):
                 except ValueError:
                     pass
             cfg[k] = v
+    # Пресет языка применяется ПОСЛЕ --set, иначе --set translate_model=...
+    # перезаписал бы модель, а остальные ключи языка остались бы от прежнего.
+    lang = getattr(args, "lang", None)
+    if lang:
+        config.apply_language_preset(cfg, lang)
     return cfg
 
 
@@ -748,6 +753,8 @@ def main():
     parser.add_argument("--interval", type=int, default=15, help="Интервал проверки в watch-режиме (сек)")
     parser.add_argument("--set", action="append", default=[],
                         help="Переопределение конфига: --set key=value (можно несколько раз)")
+    parser.add_argument("--lang", choices=config.available_languages(),
+                        help="Язык озвучки/перевода: fr или en (перекрывает config.json)")
     args = parser.parse_args()
 
     logger = setup_logger()

@@ -41,9 +41,11 @@ DEFAULT_CONFIG = {
     "whisper_prompt": "",               # подсказка для пунктуации (русская для русских роликов), "" = выключено
     "whisper_max_segment_dur": 6.0,     # автодробление слишком длинных сегментов, сек (0 = выключено)
 
-    # --- Перевод (локально: opus-mt-ru-fr / mbart-large-50) ---
+    # --- Перевод (локально: opus-mt-ru-fr / opus-mt-ru-en / mbart-large-50) ---
     # Каталог для скачанных моделей перевода (реальные файлы).
     "model_cache_dir": MODEL_CACHE_DIR,
+    # Активный язык выбирается через target_lang, а набор ключей ниже
+    # подтягивается из LANGUAGE_PRESETS (см. apply_language_preset).
     "translate_model": "opus-mt-ru-fr",   # "opus-mt-ru-fr" | "opus-mt-ru-en" | "mbart" (см. _choose_model_name)
     "translate_via_russian": True,  # True = каскад «иностр.(50 языков) → русский → целевой» через mbart+opus
     "dub_enabled": True,            # False = НЕ озвучивать (только распознать+перевести+полишить SRT)
@@ -143,14 +145,75 @@ DEFAULT_CONFIG = {
 }
 
 
+# Пресеты языков. Переключение языка = один ключ target_lang, остальные
+# подтягиваются отсюда (см. apply_language_preset).
+#
+# XTTS синтезирует голос по короткому референсу из самого ролика, поэтому
+# отдельных голосов на язык ему не нужно: меняется только код языка XTTS.
+# Kokoro нужен и код языка, и имя голоса; в Kokoro-82M французский голос
+# один (ff_siwis), английских два.
+LANGUAGE_PRESETS = {
+    "fr": {
+        "label": "Французский",
+        "translate_model": "opus-mt-ru-fr",
+        "xtts_language": "fr",
+        "kokoro_lang": "f",
+        "kokoro_voice_m": "ff_siwis",
+        "kokoro_voice_f": "ff_siwis",
+        "tts_engine": "auto",
+    },
+    "en": {
+        "label": "Английский",
+        "translate_model": "opus-mt-ru-en",
+        "xtts_language": "en",
+        "kokoro_lang": "a",
+        "kokoro_voice_m": "am_michael",
+        "kokoro_voice_f": "af_heart",
+        "tts_engine": "xtts",
+    },
+}
+
+
+def available_languages():
+    """Список языков, доступных для перевода (из пресетов)."""
+    return list(LANGUAGE_PRESETS.keys())
+
+
+def apply_language_preset(cfg, lang):
+    """Проставляет в cfg ключи языка из LANGUAGE_PRESETS.
+
+    Явно заданные пользователем значения не перебиваются, кроме target_lang:
+    так можно взять пресет языка и точечно подменить один параметр.
+    """
+    preset = LANGUAGE_PRESETS.get((lang or "").strip().lower())
+    if not preset:
+        raise ValueError(
+            "Неизвестный язык %r. Доступны: %s"
+            % (lang, ", ".join(available_languages()))
+        )
+    for key, value in preset.items():
+        if key == "label":
+            continue
+        cfg[key] = value
+    cfg["target_lang"] = lang.strip().lower()
+    return cfg
+
+
 def load_config():
     if os.path.exists(CONFIG_FILE):
         with open(CONFIG_FILE, "r", encoding="utf-8-sig") as f:
             cfg = json.load(f)
         merged = dict(DEFAULT_CONFIG)
         merged.update(cfg)
-        return merged
-    return dict(DEFAULT_CONFIG)
+    else:
+        merged = dict(DEFAULT_CONFIG)
+    # Язык всегда приводится к согласованному набору ключей: иначе после
+    # переключения target_lang в config.json остались бы ключи прошлого
+    # языка (например, translate_model=opus-mt-ru-fr при target_lang="en").
+    lang = (merged.get("target_lang") or "").strip().lower()
+    if lang in LANGUAGE_PRESETS:
+        apply_language_preset(merged, lang)
+    return merged
 
 
 def save_config(cfg):
