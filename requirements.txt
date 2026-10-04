@@ -1,0 +1,15 @@
+# Транскрибация
+faster-whisper>=1.0.0
+
+# Анализ аудио (для определения пола голоса)
+librosa>=0.10.0
+soundfile>=0.12.0
+
+# Перевод (локальный, offline)
+argostranslate>=1.9.0
+
+# Озвучка (Piper TTS)
+piper-tts>=1.2.0
+
+# HTTP (для Ollama)
+requests>=2.31.0

@@ -1,0 +1,65 @@
+# Окружение и зависимости
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Модели, голоса, кэш (десятки гигабайт — только на своей машине)
+skit_models/
+*.onnx
+*.bin
+*.safetensors
+*.ckpt
+
+# Видео и звук
+input/
+inbox_max/
+input_quarantine/
+output/
+*.mp4
+*.mkv
+*.mov
+*.avi
+*.webm
+*.wav
+*.m4a
+*.mp3
+
+# Промежуточные файлы конвейера, логи, состояния
+work/
+*.log
+*.pid
+*.heartbeat
+.watchdog.json
+.watchdog.pid
+.watcher.pid
+.max_robot.pid
+.robot_pause
+.robot_stop
+
+# Персональные настройки (в репозитории лежит config.example.json)
+config.json
+
+# Личные рабочие заметки с путями и обстановкой машины.
+# Публичная техническая версия — docs/architecture.md
+AGENTS.md
+docs/max-integration.md
+
+# Секреты
+.env
+.env.*
+*.pem
+*.key
+id_rsa
+id_ed25519
+
+# Служебное
+.opencode/
+.vscode/
+.idea/
+*.lnk
+Thumbs.db
+desktop.ini
+.DS_Store
